@@ -1,0 +1,13 @@
+# Core dependencies
+micro-sam
+opencv-python
+scikit-image
+matplotlib
+pandas
+numpy
+imageio
+tqdm
+
+# Web interface dependencies
+streamlit
+Pillow
