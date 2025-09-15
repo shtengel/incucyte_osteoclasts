@@ -125,6 +125,7 @@ def combine_image_statistics(image_stats):
         info = extract_incucyte_info(stats["image_name"])
         if not info["key"] in grouped:
             grouped[info["key"]] = []
+        stats["position"] = info["position"]
         grouped[info["key"]].append(stats)
     
     results = []
@@ -133,7 +134,13 @@ def combine_image_statistics(image_stats):
         if len(statsList) < 5:
             conbined_computed_coverage = 0
         else:
-            stitched_segmentations, valid_mask = stitch_segmentations(stats["filtered_segmentation"] for stats in statsList)
+            top = next((p for p in statsList if p["position"] == "top"), None)
+            left = next((p for p in statsList if p["position"] == "left"), None)
+            right = next((p for p in statsList if p["position"] == "right"), None)
+            bottom = next((p for p in statsList if p["position"] == "bottom"), None)
+            center = next((p for p in statsList if p["position"] == "center"), None)
+
+            stitched_segmentations, valid_mask = stitch_segmentations(center=center["filtered_segmentation"], top=top["filtered_segmentation"], bottom=bottom["filtered_segmentation"], left=left["filtered_segmentation"], right=right["filtered_segmentation"])
             conbined_computed_coverage = compute_coverage(stitched_segmentations, valid_mask)
 
         results.append({
