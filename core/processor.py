@@ -12,9 +12,8 @@ from .image_processing import read_image
 from .segmentation import run_automatic_instance_segmentation
 from analysis import extract_shape_features, count_cell_neighbors
 from visualization import visualize_segmentation, add_numbers_to_image
-from utils import calculate_image_statistics
+from utils import calculate_image_statistics, extract_incucyte_info
 from filters.filter import filter_dataframe
-
 
 def process_image_core(image, filename, model_type="vit_b_lm", min_area=200, numbered=False):
     """
@@ -55,7 +54,7 @@ def process_image_core(image, filename, model_type="vit_b_lm", min_area=200, num
     
     # Create visualizations
     segmentation_vis, random_colors = visualize_segmentation(image, segmentation)
-    area_filtered_vis, _ = visualize_segmentation(image, area_filtered_segmentation, random_colors)
+    # area_filtered_vis, _ = visualize_segmentation(image, area_filtered_segmentation, random_colors)
     final_filtered_vis, _ = visualize_segmentation(image, filtered_segmentation, random_colors)
     
     if numbered:
@@ -68,6 +67,9 @@ def process_image_core(image, filename, model_type="vit_b_lm", min_area=200, num
     # Calculate image statistics
     image_stats = calculate_image_statistics(filtered_segmentation, features_df, neighbor_counts,filename)
     
+    # append filtered segmentation to image stats for stitching
+    image_stats["filtered_segmentation"] = filtered_segmentation
+    
     return {
         'image': image,
         'segmentation': segmentation,
@@ -75,9 +77,10 @@ def process_image_core(image, filename, model_type="vit_b_lm", min_area=200, num
         'filtered_segmentation': filtered_segmentation,
         'features_df': features_df,
         'image_stats': image_stats,
+        'incucyte_info': extract_incucyte_info(os.path.basename(filename)),
         'visualizations': {
             'segmentation_vis': segmentation_vis,
-            'area_filtered_vis': area_filtered_vis,
+            # 'area_filtered_vis': area_filtered_vis,
             'final_filtered_vis': final_filtered_vis,
             'random_colors': random_colors
         }

@@ -9,10 +9,8 @@ import tempfile
 import os
 import zipfile
 import shutil
-from tqdm import tqdm
-from main import process_image
-from utils import sort_images_by_group_and_column
 from core import process_image_from_stream
+from utils import sort_images_by_group_and_column, sort_images_incucyte, extract_incucyte_info, combine_image_statistics
 
 # --- UI-specific processing function ---
 def process_image_for_ui(image_path, image_stream=None, output_dir=None, model_type="vit_b_lm", min_area=200, numbered=False):
@@ -54,17 +52,17 @@ def process_image_for_ui(image_path, image_stream=None, output_dir=None, model_t
     vis_arrays = [
         # image, 
         visualizations['final_filtered_vis'], 
-        visualizations['area_filtered_vis'], 
+        # visualizations['area_filtered_vis'], 
         visualizations['segmentation_vis']
     ]
     titles = [
         # "Original Image",
         f"Final Filtered ({len(features_df)} cells)",
-        f"Area Filtered (>{min_area} px²)",
+        # f"Area Filtered (>{min_area} px²)",
         f"All Cells ({np.max(segmentation)})"
     ]
     
-    return vis_arrays, image_stats, titles, features_df
+    return vis_arrays, image_stats, titles, features_df, result['segmentation'], result["incucyte_info"]
 
 # --- Utility: display images ---
 def display_image_batch(images, titles=None, columns=3):
@@ -108,10 +106,12 @@ def process_uploaded_files(uploaded_files, model_type="vit_b_lm", min_area=200, 
         progress_bar = st.progress(0)
         status_text = st.empty()
 
+        incucyte_group = sort_images_incucyte(images=map(lambda x: x.name, uploaded_files))
+        print(incucyte_group)
         for idx, image_path in enumerate(input_paths):
             status_text.text(f"Processing {os.path.basename(image_path)} ({idx + 1}/{total})")
 
-            visArr, image_stats, titles, features = process_image_for_ui(
+            visArr, image_stats, titles, features, segmentation, incucyte_info = process_image_for_ui(
                 image_path=image_path,
                 output_dir=output_dir,
                 model_type=model_type,
@@ -119,6 +119,7 @@ def process_uploaded_files(uploaded_files, model_type="vit_b_lm", min_area=200, 
                 numbered=numbered
             )
             if image_stats:
+                incucyte_group[incucyte_info["key"]]["results"].append(tuple([incucyte_info["position"], image_stats, features, segmentation]))
                 all_image_stats.append(image_stats)
                 
                 # Save individual image results
@@ -144,14 +145,15 @@ def process_uploaded_files(uploaded_files, model_type="vit_b_lm", min_area=200, 
                     axes[1].axis("off")
                     
                     # Area filtered
+                    # All cells
                     axes[2].imshow(visArr[2])
                     axes[2].set_title(titles[2])
                     axes[2].axis("off")
                     
                     # All cells
-                    axes[3].imshow(visArr[3])
-                    axes[3].set_title(titles[3])
-                    axes[3].axis("off")
+                    # axes[3].imshow(visArr[3])
+                    # axes[3].set_title(titles[3])
+                    # axes[3].axis("off")
                     
                     # Save combined visualization
                     vis_output_path = os.path.join(output_dir, f"{filename}_visualization.png")
@@ -165,7 +167,8 @@ def process_uploaded_files(uploaded_files, model_type="vit_b_lm", min_area=200, 
         progress_bar.empty()
 
         if all_image_stats:
-            stats_df = pd.DataFrame(all_image_stats)
+            final_combined_stats = combine_image_statistics(all_image_stats)
+            stats_df = pd.DataFrame(final_combined_stats)
             final_csv_path = os.path.join(output_dir, "FINAL_STATS.csv")
             stats_df.to_csv(final_csv_path, index=False)
 
@@ -228,7 +231,7 @@ with tab1:
             image_bytes = uploaded_file.read()
             process_stream = io.BytesIO(image_bytes)
 
-            processed_img_array, result_dict, titles, features_df = process_image_for_ui(
+            processed_img_array, result_dict, titles, features_df, segmentation, incucyte_info = process_image_for_ui(
                 image_path=uploaded_file.name,
                 image_stream=process_stream,
                 output_dir=None,
@@ -246,6 +249,7 @@ with tab1:
             display_image_batch(images=processed_img_array, titles=titles)
 
         with st.expander("📊 Show Results Table"):
+            st.subheader("Cells Touching (%d)" % result_dict["cells_touching"])
             st.dataframe(features_df.reset_index(drop=True), hide_index=True)
         
 # --- Tab 2: Batch Processing ---

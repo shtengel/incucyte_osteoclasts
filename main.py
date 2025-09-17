@@ -61,7 +61,7 @@ def process_image(image_path, output_dir, model_type="vit_b_lm", min_area=200, n
     # Save features CSV
     features_df.to_csv(features_output_path, index=False)
     
-    return image_stats, features_df, segmentation, filtered_segmentation
+    return image_stats, features_df, segmentation, filtered_segmentation, result["incucyte_info"]
 
 
 def process_directory(input_dir, output_dir, model_type="vit_b_lm", min_area=200, numbered=False):
@@ -85,7 +85,6 @@ def process_directory(input_dir, output_dir, model_type="vit_b_lm", min_area=200
     image_files = get_image_files(input_dir)
 
     incucyte_group = sort_images_incucyte(images=image_files)
-    print(incucyte_group)
     print(f"Found {len(image_files)} images in {input_dir}")
     print(f"Area filtering: Enabled (min area = {min_area} pixels²)")
     
@@ -94,13 +93,9 @@ def process_directory(input_dir, output_dir, model_type="vit_b_lm", min_area=200
     
     for image_path in tqdm(image_files, desc="Processing images", unit="image"):
         print(f"\nProcessing {os.path.basename(image_path)}")
-        incucyte_info = extract_incucyte_info(os.path.basename(image_path))
-        image_stats, features_df, segmentation, filtered_segmentation = process_image(image_path, output_dir, model_type, min_area, numbered)
+        image_stats, features_df, segmentation, _, incucyte_info = process_image(image_path, output_dir, model_type, min_area, numbered)
         if image_stats:
             incucyte_group[incucyte_info["key"]]["results"].append(tuple([incucyte_info["position"], image_stats, features_df, segmentation]))
-
-            # append filtered segmentation to image stats for stitching
-            image_stats["filtered_segmentation"] = filtered_segmentation
             all_image_stats.append(image_stats)
     
     final_combined_stats = combine_image_statistics(all_image_stats)

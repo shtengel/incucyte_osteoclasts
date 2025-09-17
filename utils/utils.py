@@ -1,14 +1,14 @@
 """
 Utility functions for data processing and image sorting.
 """
-
+from pathlib import Path
 import os
 import re
 from analysis import compute_coverage
 from core.segmentation import stitch_segmentations
 
 def extract_incucyte_info(name, splitType=5):
-    [vid, plateNumber, positionIndex, time] = os.path.basename(name).split("_")
+    [vid, plateNumber, positionIndex, time] = Path(os.path.basename(name)).stem.split("_")
 
     position = ""
     if splitType == 5:
