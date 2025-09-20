@@ -11,9 +11,10 @@ from micro_sam.instance_segmentation import (
     mask_data_to_segmentation
 )
 from micro_sam.util import precompute_image_embeddings
+from .embedding_cache import EmbeddingCache
 
 models_loaded = {}
-embeddings_cache = {}
+embeddings_cache = EmbeddingCache(max_items=30)
 
 def stitch_segmentations(center, top, bottom, left, right):
     H, W = center.shape

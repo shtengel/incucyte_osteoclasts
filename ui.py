@@ -130,9 +130,9 @@ def process_uploaded_files(uploaded_files, model_type="vit_b_lm", min_area=200, 
                 features.to_csv(features_csv_path, index=False)
                 
                 # Save visualizations
-                if visArr and len(visArr) >= 4:
+                if visArr and len(visArr) >= 3:
                     # Create a combined visualization for each image
-                    fig, axes = plt.subplots(1, 4, figsize=(20, 5))
+                    fig, axes = plt.subplots(1, 3, figsize=(20, 5))
                     
                     # Original image
                     axes[0].imshow(visArr[0])
