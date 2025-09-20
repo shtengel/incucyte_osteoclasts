@@ -6,8 +6,18 @@ import os
 import glob
 import imageio
 import numpy as np
+from PIL import Image
 import cv2
 
+def read_image_from_stream(image_stream):
+    # Read the image from stream
+    try:
+        image_stream.seek(0)
+        image = np.array(Image.open(image_stream))
+        image = cv2.resize(image, (image.shape[1] // 2, image.shape[0] // 2))
+    except Exception as e:
+        print(f"Error reading image from stream: {e}")
+        return None
 
 def read_image(image_path):
     """
@@ -21,6 +31,7 @@ def read_image(image_path):
     """
     try:
         image = imageio.imread(image_path)
+        image = cv2.resize(image, (image.shape[1] // 2, image.shape[0] // 2))
         return image
     except Exception as e:
         print(f"Error reading {os.path.basename(image_path)}: {e}")

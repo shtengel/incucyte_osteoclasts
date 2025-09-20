@@ -11,6 +11,9 @@ import zipfile
 import shutil
 from core import process_image_from_stream
 from utils import sort_images_by_group_and_column, sort_images_incucyte, extract_incucyte_info, combine_image_statistics
+from openpyxl import load_workbook
+from openpyxl.drawing.image import Image as XLImage
+from core import process_image_from_path
 
 # --- UI-specific processing function ---
 def process_image_for_ui(image_path, image_stream=None, output_dir=None, model_type="vit_b_lm", min_area=200, numbered=False):
@@ -36,7 +39,6 @@ def process_image_for_ui(image_path, image_stream=None, output_dir=None, model_t
         result = process_image_from_stream(image_stream, filename, model_type, min_area, numbered)
     else:
         # For file paths, we need to use the path-based function
-        from core import process_image_from_path
         result = process_image_from_path(image_path, model_type, min_area, numbered)
     
     if result is None:
@@ -50,13 +52,13 @@ def process_image_for_ui(image_path, image_stream=None, output_dir=None, model_t
     
     # Prepare visualization arrays for UI
     vis_arrays = [
-        # image, 
+        result['image'], 
         visualizations['final_filtered_vis'], 
         # visualizations['area_filtered_vis'], 
         visualizations['segmentation_vis']
     ]
     titles = [
-        # "Original Image",
+        "Original Image",
         f"Final Filtered ({len(features_df)} cells)",
         # f"Area Filtered (>{min_area} px²)",
         f"All Cells ({np.max(segmentation)})"
@@ -130,7 +132,7 @@ def process_uploaded_files(uploaded_files, model_type="vit_b_lm", min_area=200, 
                 features.to_csv(features_csv_path, index=False)
                 
                 # Save visualizations
-                if visArr and len(visArr) >= 3:
+                if visArr and len(visArr) >= 2:
                     # Create a combined visualization for each image
                     fig, axes = plt.subplots(1, 3, figsize=(20, 5))
                     
@@ -169,8 +171,38 @@ def process_uploaded_files(uploaded_files, model_type="vit_b_lm", min_area=200, 
         if all_image_stats:
             final_combined_stats = combine_image_statistics(all_image_stats)
             stats_df = pd.DataFrame(final_combined_stats)
-            final_csv_path = os.path.join(output_dir, "FINAL_STATS.csv")
-            stats_df.to_csv(final_csv_path, index=False)
+            final_csv_path = os.path.join(output_dir, "FINAL_STATS.xlsx")
+            stats_df.to_excel(final_csv_path, index=False, sheet_name="data")
+
+            wb = load_workbook(final_csv_path)
+            ws = wb.create_sheet("graphs")
+
+            # Create Graphs
+            df_sorted = stats_df.sort_values("image_name")
+            numeric_cols = df_sorted.select_dtypes(include="number").columns
+
+            row = 1
+            for col in numeric_cols:
+                plt.figure(figsize=(8, 5))
+                plt.plot(df_sorted["image_name"], df_sorted[col], marker="o")
+                plt.title(col)
+                plt.xticks(rotation=45)
+                plt.tight_layout()
+
+                # Save plot to a bytes buffer
+                buf = io.BytesIO()
+                plt.savefig(buf, format="png")
+                plt.close()
+                buf.seek(0)
+
+                # Insert image into Excel sheet
+                img = XLImage(buf)
+                img.width, img.height = 640, 400 
+                ws.add_image(img, f"A{row}")
+
+                row += 20  # space between plots
+
+            wb.save(final_csv_path)
 
             zip_path = os.path.join(tmp_input_dir, "results.zip")
             file_count = 0
@@ -246,7 +278,7 @@ with tab1:
             st.image(uploaded_image_preview, caption="Uploaded Image", use_column_width=True)
         with col2:
             st.subheader("Processed Image")
-            display_image_batch(images=processed_img_array, titles=titles)
+            display_image_batch(images=processed_img_array[1:], titles=titles[1:])
 
         with st.expander("📊 Show Results Table"):
             st.subheader("Cells Touching (%d)" % result_dict["cells_touching"])

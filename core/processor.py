@@ -3,12 +3,8 @@ Shared image processing logic for both CLI and UI interfaces.
 """
 
 import os
-import matplotlib.pyplot as plt
-import numpy as np
-from PIL import Image
-from io import BytesIO
 
-from .image_processing import read_image
+from .image_processing import read_image, read_image_from_stream
 from .segmentation import run_automatic_instance_segmentation
 from analysis import extract_shape_features, count_cell_neighbors
 from visualization import visualize_segmentation, add_numbers_to_image
@@ -126,11 +122,5 @@ def process_image_from_stream(image_stream, filename, model_type="vit_b_lm", min
         Dictionary with processing results or None if error
     """
     # Read the image from stream
-    try:
-        image_stream.seek(0)
-        image = np.array(Image.open(image_stream))
-    except Exception as e:
-        print(f"Error reading image from stream: {e}")
-        return None
-    
+    image = read_image_from_stream(image_stream=image_stream)
     return process_image_core(image, filename, model_type, min_area, numbered)
