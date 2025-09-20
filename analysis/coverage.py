@@ -10,5 +10,8 @@ def compute_coverage(segmentation_mask, valid_mask=None):
     else:
         total_pixels = np.count_nonzero(valid_mask)
         cell_pixels = np.count_nonzero(segmentation_mask[valid_mask])
+
+    if total_pixels == 0:
+        return 0
         
     return cell_pixels / total_pixels

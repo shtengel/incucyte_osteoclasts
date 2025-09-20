@@ -16,8 +16,16 @@ from .embedding_cache import EmbeddingCache
 models_loaded = {}
 embeddings_cache = EmbeddingCache(max_items=30)
 
-def stitch_segmentations(center, top=None, bottom=None, left=None, right=None):
-    H, W = center.shape
+def stitch_segmentations(center=None, top=None, bottom=None, left=None, right=None):
+    # find first non-None tile to determine dimensions
+    ref = center or top or bottom or left or right
+
+    if ref is None:
+        # all are None -> return default
+        return np.zeros((1, 1), dtype=np.int32), np.zeros((1, 1), dtype=bool)
+    
+    H, W = ref.shape
+
     stitched = np.zeros((3*H, 3*W), dtype=np.int32)
     valid_mask = np.zeros((3*H, 3*W), dtype=bool)
 

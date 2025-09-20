@@ -101,6 +101,7 @@ def sort_images_by_group_and_column(images, groups=[("B", "C", "D"), ("E", "F", 
 def empty_image_statistics(filename):
     return {
         'image_name': filename,
+        'filtered_segmentation': None,
         'num_cells': 0,
         "cells_touching": 0,
         'mean_eccentricity': 0,
