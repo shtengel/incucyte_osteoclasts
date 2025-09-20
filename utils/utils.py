@@ -98,6 +98,17 @@ def sort_images_by_group_and_column(images, groups=[("B", "C", "D"), ("E", "F", 
     return result
 
 
+def empty_image_statistics(filename):
+    return {
+        'image_name': filename,
+        'num_cells': 0,
+        "cells_touching": 0,
+        'mean_eccentricity': 0,
+        'mean_area': 0,
+        'mean_perimeter': 0,
+        'plate_coverage_percent': 0
+    }
+
 def calculate_image_statistics(segmentation, features_df, cells_touching, filename):
     """
     Calculate image statistics for final CSV output.

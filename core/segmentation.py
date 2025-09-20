@@ -16,26 +16,25 @@ from .embedding_cache import EmbeddingCache
 models_loaded = {}
 embeddings_cache = EmbeddingCache(max_items=30)
 
-def stitch_segmentations(center, top, bottom, left, right):
+def stitch_segmentations(center, top=None, bottom=None, left=None, right=None):
     H, W = center.shape
     stitched = np.zeros((3*H, 3*W), dtype=np.int32)
     valid_mask = np.zeros((3*H, 3*W), dtype=bool)
 
+    def place(tile, y1, y2, x1, x2):
+        if tile is None:
+            return
+        if tile.shape != (H, W):
+            raise ValueError(f"Expected tile shape {(H, W)}, got {tile.shape}")
+        stitched[y1:y2, x1:x2] = tile
+        valid_mask[y1:y2, x1:x2] = True
+
     # Place tiles
-    stitched[H:2*H, W:2*W] = center
-    valid_mask[H:2*H, W:2*W] = True
-
-    stitched[0:H, W:2*W] = top
-    valid_mask[0:H, W:2*W] = True
-
-    stitched[2*H:3*H, W:2*W] = bottom
-    valid_mask[2*H:3*H, W:2*W] = True
-
-    stitched[H:2*H, 0:W] = left
-    valid_mask[H:2*H, 0:W] = True
-
-    stitched[H:2*H, 2*W:3*W] = right
-    valid_mask[H:2*H, 2*W:3*W] = True
+    place(center, H, 2*H, W, 2*W)   # center
+    place(top, 0, H, W, 2*W)        # top
+    place(bottom, 2*H, 3*H, W, 2*W) # bottom
+    place(left, H, 2*H, 0, W)       # left
+    place(right, H, 2*H, 2*W, 3*W)  # right
 
     return stitched, valid_mask
 

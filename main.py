@@ -10,7 +10,7 @@ import pandas as pd
 
 from core import read_image, get_image_files, process_image_from_path
 from visualization import create_combined_visualization
-from utils import sort_images_by_group_and_column, sort_images_incucyte, extract_incucyte_info, combine_image_statistics
+from utils import sort_images_by_group_and_column, sort_images_incucyte, extract_incucyte_info, combine_image_statistics, empty_image_statistics
 
 
 def process_image(image_path, output_dir, model_type="vit_b_lm", min_area=200, numbered=False):
@@ -27,13 +27,14 @@ def process_image(image_path, output_dir, model_type="vit_b_lm", min_area=200, n
     Returns:
         Dictionary with image statistics for final CSV
     """
+    # Extract results from shared processing
+    filename = os.path.splitext(os.path.basename(image_path))[0]
+
     # Use shared processing logic
     result = process_image_from_path(image_path, model_type, min_area, numbered)
     if result is None:
-        return None
+        return empty_image_statistics(filename=filename), pd.DataFrame(), None, None, extract_incucyte_info(os.path.basename(filename))
     
-    # Extract results from shared processing
-    filename = os.path.splitext(os.path.basename(image_path))[0]
     image = result['image']
     segmentation = result['segmentation']
     filtered_segmentation = result['filtered_segmentation']

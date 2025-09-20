@@ -14,6 +14,7 @@ from utils import sort_images_by_group_and_column, sort_images_incucyte, extract
 from openpyxl import load_workbook
 from openpyxl.drawing.image import Image as XLImage
 from core import process_image_from_path
+from utils import empty_image_statistics
 
 # --- UI-specific processing function ---
 def process_image_for_ui(image_path, image_stream=None, output_dir=None, model_type="vit_b_lm", min_area=200, numbered=False):
@@ -42,7 +43,7 @@ def process_image_for_ui(image_path, image_stream=None, output_dir=None, model_t
         result = process_image_from_path(image_path, model_type, min_area, numbered)
     
     if result is None:
-        return None, None, None, None
+        return None, empty_image_statistics(filename=filename), None, pd.DataFrame(), None, extract_incucyte_info(filename)
     
     # Extract results from shared processing
     segmentation = result['segmentation']
@@ -109,7 +110,6 @@ def process_uploaded_files(uploaded_files, model_type="vit_b_lm", min_area=200, 
         status_text = st.empty()
 
         incucyte_group = sort_images_incucyte(images=map(lambda x: x.name, uploaded_files))
-        print(incucyte_group)
         for idx, image_path in enumerate(input_paths):
             status_text.text(f"Processing {os.path.basename(image_path)} ({idx + 1}/{total})")
 
@@ -120,48 +120,48 @@ def process_uploaded_files(uploaded_files, model_type="vit_b_lm", min_area=200, 
                 min_area=min_area,
                 numbered=numbered
             )
-            if image_stats:
-                incucyte_group[incucyte_info["key"]]["results"].append(tuple([incucyte_info["position"], image_stats, features, segmentation]))
-                all_image_stats.append(image_stats)
+
+            incucyte_group[incucyte_info["key"]]["results"].append(tuple([incucyte_info["position"], image_stats, features, segmentation]))
+            all_image_stats.append(image_stats)
+            
+            # Save individual image results
+            filename = os.path.splitext(os.path.basename(image_path))[0]
+            
+            # Save features CSV
+            features_csv_path = os.path.join(output_dir, f"{filename}_features.csv")
+            features.to_csv(features_csv_path, index=False)
+            
+            # Save visualizations
+            if visArr and len(visArr) >= 2:
+                # Create a combined visualization for each image
+                fig, axes = plt.subplots(1, 3, figsize=(20, 5))
                 
-                # Save individual image results
-                filename = os.path.splitext(os.path.basename(image_path))[0]
+                # Original image
+                axes[0].imshow(visArr[0])
+                axes[0].set_title(titles[0])
+                axes[0].axis("off")
                 
-                # Save features CSV
-                features_csv_path = os.path.join(output_dir, f"{filename}_features.csv")
-                features.to_csv(features_csv_path, index=False)
+                # Final filtered
+                axes[1].imshow(visArr[1])
+                axes[1].set_title(titles[1])
+                axes[1].axis("off")
                 
-                # Save visualizations
-                if visArr and len(visArr) >= 2:
-                    # Create a combined visualization for each image
-                    fig, axes = plt.subplots(1, 3, figsize=(20, 5))
-                    
-                    # Original image
-                    axes[0].imshow(visArr[0])
-                    axes[0].set_title(titles[0])
-                    axes[0].axis("off")
-                    
-                    # Final filtered
-                    axes[1].imshow(visArr[1])
-                    axes[1].set_title(titles[1])
-                    axes[1].axis("off")
-                    
-                    # Area filtered
-                    # All cells
-                    axes[2].imshow(visArr[2])
-                    axes[2].set_title(titles[2])
-                    axes[2].axis("off")
-                    
-                    # All cells
-                    # axes[3].imshow(visArr[3])
-                    # axes[3].set_title(titles[3])
-                    # axes[3].axis("off")
-                    
-                    # Save combined visualization
-                    vis_output_path = os.path.join(output_dir, f"{filename}_visualization.png")
-                    plt.tight_layout()
-                    plt.savefig(vis_output_path, dpi=150, bbox_inches='tight')
-                    plt.close()
+                # Area filtered
+                # All cells
+                axes[2].imshow(visArr[2])
+                axes[2].set_title(titles[2])
+                axes[2].axis("off")
+                
+                # All cells
+                # axes[3].imshow(visArr[3])
+                # axes[3].set_title(titles[3])
+                # axes[3].axis("off")
+                
+                # Save combined visualization
+                vis_output_path = os.path.join(output_dir, f"{filename}_visualization.png")
+                plt.tight_layout()
+                plt.savefig(vis_output_path, dpi=150, bbox_inches='tight')
+                plt.close()
 
             progress_bar.progress((idx + 1) / total)
 
@@ -272,13 +272,18 @@ with tab1:
                 numbered=numbered
             )
 
+        if features_df is None:
+            features_df = pd.DataFrame()
+            result_dict = {"cells_touching": 0}
+
         st.subheader("Comparison")
         col1, col2 = st.columns(2)
         with col1:
             st.image(uploaded_image_preview, caption="Uploaded Image", use_column_width=True)
         with col2:
             st.subheader("Processed Image")
-            display_image_batch(images=processed_img_array[1:], titles=titles[1:])
+            if processed_img_array is not None:
+                display_image_batch(images=processed_img_array[1:], titles=titles[1:])
 
         with st.expander("📊 Show Results Table"):
             st.subheader("Cells Touching (%d)" % result_dict["cells_touching"])
