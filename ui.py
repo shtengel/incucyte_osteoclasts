@@ -242,6 +242,11 @@ st.sidebar.caption(model_desc[model_type])
 # --- Tabs ---
 tab1, tab2 = st.tabs(["🖼 Single Image", "📂 Batch Processing"])
 
+if "zip_path" not in st.session_state:
+    st.session_state.zip_path = None
+if "batch_stats_df" not in st.session_state:
+    st.session_state.batch_stats_df = None
+
 # --- Tab 1: Single Image ---
 with tab1:
     st.subheader("Single Image Processing")
@@ -303,16 +308,19 @@ with tab2:
                 numbered=numbered
             )
 
-        if zip_path:
-            st.success("Batch processing complete.")
-            st.info(f"📦 ZIP file includes {len(uploaded_files) * 2 + 1} files:\n"
-                   "• Individual feature CSV files for each image\n"
-                   "• Combined visualizations for each image\n"
-                   "• Final summary statistics CSV")
-            with open(zip_path, "rb") as f:
-                st.download_button("📦 Download Results (ZIP)", f, file_name="results.zip", mime="application/zip")
+        st.session_state.zip_path = zip_path
+        st.session_state.batch_stats_df = batch_stats_df
 
-            with st.expander("📊 Show Summary Table"):
-                st.dataframe(batch_stats_df)
-        else:
-            st.warning("No images were successfully processed.")
+    if st.session_state.zip_path:
+        st.success("Batch processing complete.")
+        st.info(f"📦 ZIP file includes {len(uploaded_files) * 2 + 1} files:\n"
+                "• Individual feature CSV files for each image\n"
+                "• Combined visualizations for each image\n"
+                "• Final summary statistics CSV")
+        with open(st.session_state.zip_path, "rb") as f:
+            st.download_button("📦 Download Results (ZIP)", f, file_name="results.zip", mime="application/zip")
+
+        with st.expander("📊 Show Summary Table"):
+            st.dataframe(st.session_state.batch_stats_df)
+    else:
+        st.warning("No images were successfully processed.")
