@@ -33,7 +33,7 @@ def process_image_core(image, filename, model_type="vit_b_lm", min_area=200, num
             checkpoint_path="checkpoints/checkpoints/vit_b_lm_incucyte/incucyte_2.pt"
         )
     except Exception as e:
-        print(f"Error in segmentation for {filename}: {e}")
+        print(f"Error in segmentation for {filename}", e)
         return None
     
     # Extract shape features and apply area filtering

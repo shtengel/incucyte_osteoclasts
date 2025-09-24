@@ -18,8 +18,7 @@ embeddings_cache = EmbeddingCache(max_items=30)
 
 def stitch_segmentations(center=None, top=None, bottom=None, left=None, right=None):
     # find first non-None tile to determine dimensions
-    ref = center or top or bottom or left or right
-
+    ref = next((x for x in [center, top, bottom, left, right] if x is not None), None)
     if ref is None:
         # all are None -> return default
         return np.zeros((1, 1), dtype=np.int32), np.zeros((1, 1), dtype=bool)
@@ -46,7 +45,7 @@ def stitch_segmentations(center=None, top=None, bottom=None, left=None, right=No
 
     return stitched, valid_mask
 
-def run_automatic_instance_segmentation(image, model_type="vit_b_lm", checkpoint_path=None, cache_embeddings=True):
+def run_automatic_instance_segmentation(image, model_type="vit_b_lm", checkpoint_path=None, cache_embeddings=False):
     """
     Optimized Automatic Instance Segmentation with µsam.
 
@@ -65,6 +64,8 @@ def run_automatic_instance_segmentation(image, model_type="vit_b_lm", checkpoint
     # Load predictor + decoder (cached globally)
     if key in models_loaded:
         predictor, decoder = models_loaded[key]
+        predictor._features = None
+        predictor.reset_image()
     else:
         predictor, decoder = get_predictor_and_decoder(
             model_type=model_type,
