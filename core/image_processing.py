@@ -17,6 +17,7 @@ def read_image_from_stream(image_stream):
         image_stream.seek(0)
         image = np.array(Image.open(image_stream))
         image = cv2.resize(image, (image.shape[1] // scale, image.shape[0] // scale))
+        return image
     except Exception as e:
         print(f"Error reading image from stream: {e}")
         return None
