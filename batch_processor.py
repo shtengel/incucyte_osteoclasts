@@ -257,8 +257,8 @@ def main():
     parser.add_argument(
         "--min-area",
         type=int,
-        default=200,
-        help="Minimum cell area in pixels² for filtering (default: 200)",
+        default=500,
+        help="Minimum cell area in pixels² for filtering (default: 500)",
     )
     parser.add_argument(
         "--numbered",
