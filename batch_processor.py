@@ -183,7 +183,7 @@ def _save_visualization(original_image, final_filtered_vis, segmentation_vis,
 def _build_excel_with_graphs(all_image_stats, output_dir):
     """Create FINAL_STATS.xlsx with a data sheet and embedded graphs."""
     final_combined_stats = combine_image_statistics(all_image_stats)
-    stats_df = pd.DataFrame(final_combined_stats)
+    stats_df = pd.DataFrame(final_combined_stats).sort_values("image_name").reset_index(drop=True)
 
     xlsx_path = os.path.join(output_dir, "FINAL_STATS.xlsx")
     stats_df.to_excel(xlsx_path, index=False, sheet_name="data")
@@ -191,7 +191,7 @@ def _build_excel_with_graphs(all_image_stats, output_dir):
     wb = load_workbook(xlsx_path)
     ws = wb.create_sheet("graphs")
 
-    df_sorted = stats_df.sort_values("image_name")
+    df_sorted = stats_df
     numeric_cols = df_sorted.select_dtypes(include="number").columns
 
     row = 1
