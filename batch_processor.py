@@ -31,6 +31,7 @@ from utils import (
     sort_images_incucyte,
     extract_incucyte_info,
     combine_image_statistics,
+    empty_image_statistics,
 )
 from core.image_processing import get_image_files
 
@@ -96,10 +97,17 @@ def process_batch(
         logger.info("Processing %s (%d/%d)", filename, idx + 1, len(image_paths))
 
         # Process the image using the shared core logic
-        result = process_image_from_path(image_path, model_type, min_area, numbered)
+        try:
+            result = process_image_from_path(image_path, model_type, min_area, numbered)
+        except Exception as e:
+            logger.warning("Exception processing %s: %s", filename, e)
+            result = None
+
         if result is None:
-            logger.warning("Failed to process %s, skipping", filename)
+            logger.warning("Failed to process %s, recording zeros", filename)
             failed += 1
+            incucyte_info = extract_incucyte_info(os.path.basename(image_path))
+            all_image_stats.append(empty_image_statistics(filename))
             continue
 
         segmentation = result["segmentation"]
