@@ -7,14 +7,10 @@ import math
 import pandas as pd
 import tempfile
 import os
-import zipfile
 import shutil
-from core import process_image_from_stream
-from utils import sort_images_by_group_and_column, sort_images_incucyte, extract_incucyte_info, combine_image_statistics
-from openpyxl import load_workbook
-from openpyxl.drawing.image import Image as XLImage
-from core import process_image_from_path
-from utils import empty_image_statistics
+from core import process_image_from_stream, process_image_from_path
+from utils import extract_incucyte_info, empty_image_statistics
+from batch_processor import process_batch as _run_batch
 
 # --- UI-specific processing function ---
 def process_image_for_ui(image_path, image_stream=None, output_dir=None, model_type="vit_b_lm", min_area=200, numbered=False):
@@ -89,137 +85,34 @@ def display_image_batch(images, titles=None, columns=3):
             ax.remove()
     st.pyplot(fig)
 
-# --- Utility: process batch of uploaded files ---
+# --- Utility: process batch of uploaded files (thin Streamlit wrapper) ---
 def process_uploaded_files(uploaded_files, model_type="vit_b_lm", min_area=200, numbered=False):
-    with tempfile.TemporaryDirectory() as tmp_input_dir:
-        output_dir = os.path.join(tmp_input_dir, "results")
-        os.makedirs(output_dir, exist_ok=True)
+    # Save uploaded files to a temporary input directory
+    tmp_input_dir = tempfile.mkdtemp()
+    for file in uploaded_files:
+        save_path = os.path.join(tmp_input_dir, file.name)
+        with open(save_path, "wb") as f:
+            f.write(file.read())
 
-        input_paths = []
-        for file in uploaded_files:
-            save_path = os.path.join(tmp_input_dir, file.name)
-            with open(save_path, "wb") as f:
-                f.write(file.read())
-            input_paths.append(save_path)
+    try:
+        # Delegate all processing to the standalone batch_processor module
+        zip_path, stats_df = _run_batch(
+            input_source=tmp_input_dir,
+            output_dir=os.path.join(tmp_input_dir, "results"),
+            model_type=model_type,
+            min_area=min_area,
+            numbered=numbered,
+        )
 
-        all_image_stats = []
-        total = len(input_paths)
+        if zip_path is None:
+            return None, None
 
-        # Streamlit progress bar and status
-        progress_bar = st.progress(0)
-        status_text = st.empty()
-
-        incucyte_group = sort_images_incucyte(images=map(lambda x: x.name, uploaded_files))
-        for idx, image_path in enumerate(input_paths):
-            status_text.text(f"Processing {os.path.basename(image_path)} ({idx + 1}/{total})")
-
-            visArr, image_stats, titles, features, segmentation, incucyte_info = process_image_for_ui(
-                image_path=image_path,
-                output_dir=output_dir,
-                model_type=model_type,
-                min_area=min_area,
-                numbered=numbered
-            )
-
-            incucyte_group[incucyte_info["key"]]["results"].append(tuple([incucyte_info["position"], image_stats, features, segmentation]))
-            all_image_stats.append(image_stats)
-            
-            # Save individual image results
-            filename = os.path.splitext(os.path.basename(image_path))[0]
-            
-            # Save features CSV
-            features_csv_path = os.path.join(output_dir, f"{filename}_features.csv")
-            features.to_csv(features_csv_path, index=False)
-            
-            # Save visualizations
-            if visArr and len(visArr) >= 2:
-                # Create a combined visualization for each image
-                fig, axes = plt.subplots(1, 3, figsize=(20, 5))
-                
-                # Original image
-                axes[0].imshow(visArr[0])
-                axes[0].set_title(titles[0])
-                axes[0].axis("off")
-                
-                # Final filtered
-                axes[1].imshow(visArr[1])
-                axes[1].set_title(titles[1])
-                axes[1].axis("off")
-                
-                # Area filtered
-                # All cells
-                axes[2].imshow(visArr[2])
-                axes[2].set_title(titles[2])
-                axes[2].axis("off")
-                
-                # All cells
-                # axes[3].imshow(visArr[3])
-                # axes[3].set_title(titles[3])
-                # axes[3].axis("off")
-                
-                # Save combined visualization
-                vis_output_path = os.path.join(output_dir, f"{filename}_visualization.png")
-                plt.tight_layout()
-                plt.savefig(vis_output_path, dpi=150, bbox_inches='tight')
-                plt.close()
-
-            progress_bar.progress((idx + 1) / total)
-
-        status_text.text("Processing complete.")
-        progress_bar.empty()
-
-        if all_image_stats:
-            final_combined_stats = combine_image_statistics(all_image_stats)
-            stats_df = pd.DataFrame(final_combined_stats)
-            final_csv_path = os.path.join(output_dir, "FINAL_STATS.xlsx")
-            stats_df.to_excel(final_csv_path, index=False, sheet_name="data")
-
-            wb = load_workbook(final_csv_path)
-            ws = wb.create_sheet("graphs")
-
-            # Create Graphs
-            df_sorted = stats_df.sort_values("image_name")
-            numeric_cols = df_sorted.select_dtypes(include="number").columns
-
-            row = 1
-            for col in numeric_cols:
-                plt.figure(figsize=(8, 5))
-                plt.plot(df_sorted["image_name"], df_sorted[col], marker="o")
-                plt.title(col)
-                plt.xticks(rotation=45)
-                plt.tight_layout()
-
-                # Save plot to a bytes buffer
-                buf = io.BytesIO()
-                plt.savefig(buf, format="png")
-                plt.close()
-                buf.seek(0)
-
-                # Insert image into Excel sheet
-                img = XLImage(buf)
-                img.width, img.height = 640, 400 
-                ws.add_image(img, f"A{row}")
-
-                row += 20  # space between plots
-
-            wb.save(final_csv_path)
-
-            zip_path = os.path.join(tmp_input_dir, "results.zip")
-            file_count = 0
-            with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
-                for root, _, files in os.walk(output_dir):
-                    for file in files:
-                        file_path = os.path.join(root, file)
-                        arcname = os.path.relpath(file_path, output_dir)
-                        zipf.write(file_path, arcname)
-                        file_count += 1
-
-            final_zip = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
-            shutil.copy(zip_path, final_zip.name)
-
-            return final_zip.name, stats_df
-
-        return None, None
+        # Copy the ZIP to a persistent temp file (Streamlit needs it after function returns)
+        final_zip = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
+        shutil.copy(zip_path, final_zip.name)
+        return final_zip.name, stats_df
+    finally:
+        shutil.rmtree(tmp_input_dir, ignore_errors=True)
 
 # --- Streamlit layout ---
 st.set_page_config(layout="wide")
