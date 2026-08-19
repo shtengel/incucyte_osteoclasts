@@ -1,6 +1,7 @@
 """
 Segmentation module for MicroSAM operations and instance segmentation.
 """
+import os
 import time
 import numpy as np
 from micro_sam.automatic_segmentation import get_predictor_and_segmenter, automatic_instance_segmentation
@@ -15,6 +16,25 @@ from .embedding_cache import EmbeddingCache
 
 models_loaded = {}
 embeddings_cache = EmbeddingCache(max_items=30)
+
+
+def _validate_checkpoint(checkpoint_path):
+    """Ensure the checkpoint file exists and is not a Git LFS pointer."""
+    if checkpoint_path is None:
+        return
+    if not os.path.exists(checkpoint_path):
+        raise FileNotFoundError(
+            f"Checkpoint not found: {checkpoint_path}. "
+            "If the file is tracked by Git LFS, run `git lfs pull` to download it."
+        )
+    with open(checkpoint_path, "rb") as f:
+        header = f.read(64)
+    if header.startswith(b"version https://git-lfs.github.com/spec/v1"):
+        raise RuntimeError(
+            f"Checkpoint file {checkpoint_path} is a Git LFS pointer, not the actual model weights. "
+            "Run `git lfs pull` to download the real checkpoint, or replace it with the model weights."
+        )
+
 
 def stitch_segmentations(center=None, top=None, bottom=None, left=None, right=None):
     # find first non-None tile to determine dimensions
@@ -59,6 +79,7 @@ def run_automatic_instance_segmentation(image, model_type="vit_b_lm", checkpoint
         Segmentation prediction (numpy array).
     """
     key = f"{model_type}.{checkpoint_path}"
+    _validate_checkpoint(checkpoint_path)
     start_time = time.perf_counter()
 
     # Load predictor + decoder (cached globally)

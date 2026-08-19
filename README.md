@@ -1,171 +1,190 @@
-# Incucyte App - Modular Cell Segmentation Pipeline
+# Incucyte Osteoclast Segmentation & Analysis
 
-This application provides a modular pipeline for cell segmentation and analysis using MicroSAM (Segment Anything Model for microscopy).
+A Streamlit web app and command-line tool for automated segmentation and quantitative analysis of **Incucyte time-lapse microscopy images** (5-position wells: center, top, bottom, left, right). It uses a custom fine-tuned [micro-SAM](https://computational-cell-analytics.github.io/micro-sam/micro_sam.html) model to segment individual cells, extracts shape features, and computes plate coverage — including optional 5-position well stitching.
 
-## Project Structure
+---
 
-The code has been organized into logical sub-folders:
+## Features
 
-```
-incucyte_app/
-├── core/                    # Core processing modules
-│   ├── __init__.py
-│   ├── image_processing.py  # Image I/O operations and basic processing
-│   ├── segmentation.py      # MicroSAM-based cell segmentation
-│   └── processor.py         # ⭐ Shared processing logic for CLI and UI
-├── analysis/                # Analysis modules
-│   ├── __init__.py
-│   └── feature_extraction.py # Shape and intensity feature extraction
-├── visualization/           # Visualization modules
-│   ├── __init__.py
-│   └── visualization.py     # Plotting and image visualization
-├── utils/                   # Utility modules
-│   ├── __init__.py
-│   └── utils.py            # Utility functions and data processing
-├── main.py                  # Main CLI interface and orchestration
-├── ui.py                    # Streamlit web interface
-├── app.py                   # Legacy compatibility layer
-├── __init__.py              # Package initialization and exports
-└── README.md                # This file
-```
+- **Single image mode** — upload one image and get an annotated overlay + per-cell table.
+- **Batch mode** — process many images at once and download a ZIP with overlays, masks, per-image CSVs, and a combined `FINAL_STATS.csv`.
+- **Incucyte 5-position stitching** — automatically groups images by `VID_plate_time` key and stitches center/top/bottom/left/right tiles into a 3×3 grid for combined coverage calculation.
+- **Adjustable filters** — `Min Area` removes small fragments; optional numbered labels help match cells to the results table.
+- **Custom MicroSAM checkpoint** — `vit_b_lm_incucyte` fine-tuned checkpoint loaded by default from `checkpoints/checkpoints/vit_b_lm_incucyte/incucyte_2.pt`.
+- **In-app documentation** — open the 📖 Documentation tab in the running app for a walkthrough.
 
-## Usage
-
-### Web Interface (Recommended)
-
-Launch the Streamlit web interface:
-
-```bash
-streamlit run ui.py
-```
-
-This provides an interactive web interface with:
-- Single image processing with real-time visualization
-- Batch processing with progress tracking
-- Interactive parameter adjustment
-- Download results as ZIP files containing:
-  - Individual feature CSV files for each image
-  - Combined visualizations for each image
-  - Final summary statistics CSV
-
-### Command Line Interface
-
-```bash
-python main.py --input /path/to/images --output /path/to/results [options]
-```
-
-### Available Options
-
-- `--input`: Input directory containing images (required)
-- `--output`: Output directory for results (required)
-- `--model`: MicroSAM model type (default: vit_b_lm)
-- `--min-area`: Minimum cell area in pixels² (default: 500)
-- `--numbered`: Show cells with numbers on visualization
-
-### Programmatic Usage
-
-```python
-from incucyte_app import process_directory, process_image
-
-# Process a single image
-stats = process_image("path/to/image.png", "output/dir")
-
-# Process a directory of images
-results_df = process_directory("input/dir", "output/dir", min_area=200)
-```
-
-## Module Details
-
-### core/
-- **`image_processing.py`**
-  - `read_image()` - Read images with error handling
-  - `get_image_files()` - Get all image files from directory
-- **`segmentation.py`**
-  - `run_automatic_instance_segmentation()` - Run MicroSAM segmentation
-- **`processor.py`** ⭐ **NEW**
-  - `process_image_core()` - Core shared processing logic
-  - `process_image_from_path()` - Process image from file path
-  - `process_image_from_stream()` - Process image from stream (for UI)
-
-### analysis/
-- **`feature_extraction.py`**
-  - `extract_shape_features()` - Extract cell shape features
-  - `calculate_plate_coverage()` - Calculate plate coverage percentage
-
-### visualization/
-- **`visualization.py`**
-  - `visualize_segmentation()` - Create segmentation visualizations
-  - `add_numbers_to_image()` - Add cell numbers to images
-  - `create_combined_visualization()` - Create multi-panel visualizations
-
-### utils/
-- **`utils.py`**
-  - `sort_images_by_group_and_column()` - Sort images by experimental groups
-  - `calculate_image_statistics()` - Calculate summary statistics
-
-## Dependencies
-
-### Core Dependencies
-- micro-sam
-- opencv-python
-- scikit-image
-- matplotlib
-- pandas
-- numpy
-- imageio
-- tqdm
-
-### Web Interface Dependencies
-- streamlit
-- Pillow (PIL)
+---
 
 ## Installation
 
+This project depends on [micro-SAM](https://computational-cell-analytics.github.io/micro-sam/micro_sam.html), which is easiest to install via conda. Follow the official install guide:
+
+👉 **[micro-SAM installation instructions](https://computational-cell-analytics.github.io/micro-sam/micro_sam.html#from-conda)**
+
+After activating the micro-SAM environment, install the remaining dependencies:
+
 ```bash
-# Install core dependencies
-pip install micro-sam opencv-python scikit-image matplotlib pandas numpy imageio tqdm
-
-# Install web interface dependencies
-pip install streamlit Pillow
-
-# Or use conda
-conda activate micro-sam
-conda install streamlit pillow
+pip install -r requirements.txt
 ```
 
-## Migration from Legacy Code
+Then launch either the web UI or the CLI:
 
-The original `app.py` file has been refactored into modules while maintaining backward compatibility. All original functions are still available through imports:
+```bash
+# Web UI
+streamlit run ui.py
 
-```python
-# Old way (still works)
-from app import process_directory
-
-# New way (recommended)
-from main import process_directory
-# or
-from incucyte_app import process_directory
+# CLI
+python main.py --input /path/to/images --output /path/to/results
 ```
 
-## Shared Processing Logic
+---
 
-The core processing logic is now centralized in `core/processor.py` to ensure consistency between CLI and UI:
+## Quick start
 
-```python
-# Direct access to shared processing functions
-from incucyte_app import process_image_core, process_image_from_path, process_image_from_stream
+### 1. Process a single image
 
-# Process from file path (CLI usage)
-result = process_image_from_path("image.png", model_type="vit_b_lm", min_area=200)
+1. Run `streamlit run ui.py`.
+2. Open the **🖼 Single Image** tab.
+3. Upload a `.png`, `.tif`, `.tiff`, or `.jpg`.
+4. Adjust the sidebar parameters (see [Parameters](#parameters)).
+5. Click **Process Image** and review the comparison.
 
-# Process from stream (UI usage)  
-result = process_image_from_stream(image_stream, "image.png", model_type="vit_b_lm", min_area=200)
+### 2. Process a batch
 
-# Access all processing results
-image = result['image']
-segmentation = result['segmentation'] 
-features_df = result['features_df']
-visualizations = result['visualizations']
+1. Open the **📂 Batch Processing** tab.
+2. Select multiple files at once (Ctrl/⌘-click).
+3. Click **Process Uploaded Batch** — a progress bar tracks each image.
+4. Download the **📦 results ZIP** containing annotated overlays, per-image CSVs, and `FINAL_STATS.csv`.
+
+> **Note:** Segmentation results may vary slightly between different computers due to differences in hardware, floating-point behavior, and dependency versions. Always verify outputs on your own system before drawing conclusions.
+
+---
+
+## Outputs and results
+
+For every processed image the app writes three files into the results folder (and into the batch ZIP):
+
+- `<image>_final_filtered.png` — side-by-side debug visualization showing original image, final filtered cells, and all detected cells.
+- `<image>_features.csv` — one row per detected cell with its measured features.
+- `<image>.png` (in batch only) — the input image saved alongside the results.
+
+For batches, a fourth file `FINAL_STATS.csv` summarizes every image on one row.
+
+### Per-cell features (`<image>_features.csv`)
+
+Each row corresponds to a single cell that passed all filters.
+
+| Column | Description |
+|---|---|
+| `cell_id` | Unique numeric label assigned to the cell. |
+| `area` | Cell area in pixels. |
+| `perimeter` | Cell perimeter in pixels. |
+
+### Batch summary (`FINAL_STATS.csv`)
+
+`FINAL_STATS.csv` contains one summary row per image or per Incucyte well group:
+
+| Column | Description |
+|---|---|
+| `image_name` | Name of the input image or the Incucyte `VID_plate_time` group key. |
+| `num_cells` | Total number of cells that passed all filters. |
+| `cells_touching` | Number of cell pairs that are touching (dilated mask overlap). |
+| `mean_area` | Average cell area among detected cells (pixels). |
+| `mean_perimeter` | Average cell perimeter among detected cells (pixels). |
+| `plate_coverage_percent` | Estimated percentage of the plate area covered by cells. |
+
+For Incucyte 5-position filenames (`VID167_E7_3_02d18h00m`), rows are grouped by `VID_plate_time` and coverage is computed on the stitched 3×3 grid.
+
+---
+
+## Recommended workflow
+
+Before running a full batch, **calibrate the parameters on a few representative images** using the Single Image tab:
+
+1. Start with the most permissive value: **`Min Area = 0`** so nothing is dropped.
+2. Process a handful of representative images.
+3. Manually inspect the annotated overlays — note the smallest *true* cells you want to keep.
+4. Set **`Min Area`** just below the smallest true cell you want to keep.
+5. Re-run the single-image cases to confirm the filters look correct.
+6. Only then switch to **📂 Batch Processing** with the chosen values.
+
+---
+
+## Parameters
+
+All parameters live in the left sidebar of the Streamlit UI and can also be passed via the command line.
+
+| Parameter | Default | Description |
+|---|---|---|
+| **Min Area** | 100 (CLI) / 500 (UI) | Drop any cell whose area is **lower** than this pixel count. Increase to remove fragments, decrease to keep small cells. |
+| **Numbered Labels** | Off (CLI) / On (UI) | Overlay numeric IDs on each detected cell so they can be matched to the results table. |
+| **Model Type** | `vit_b_lm` | SAM backbone. The default uses the custom `vit_b_lm_incucyte` fine-tuned checkpoint. |
+
+### CLI options
+
+When running the pipeline from the terminal (`python main.py`), the following flags are available:
+
+| Flag | Default | Description |
+|---|---|---|
+| `--input` (required) | — | Directory containing input images. |
+| `--output` (required) | — | Directory where results and `FINAL_STATS.csv` are saved. |
+| `--model` | `vit_b_lm` | MicroSAM model type. Passed to `core/segmentation.py`, which loads the custom checkpoint `checkpoints/checkpoints/vit_b_lm_incucyte/incucyte_2.pt` when available. |
+| `--min-area` | 100 | Minimum cell area in pixels². Cells smaller than this are dropped. |
+| `--numbered` | False | Add numeric labels to each cell in the output overlay. |
+
+### Tuning notes
+
+- **Min Area**: This is the main control for removing segmentation fragments and noise. Start at `0` while calibrating, identify the smallest true cell you want to keep, then set Min Area just below that value.
+- **Numbered Labels**: Adds white numeric IDs at cell centroids. Enable when you need to cross-reference the overlay with the per-cell CSV.
+- **Model Type**: The app is designed around a custom `vit_b_lm_incucyte` fine-tuned checkpoint. Only change this if you have a compatible replacement checkpoint.
+
+---
+
+## Incucyte filename format
+
+The app recognizes Incucyte filenames split by underscores into four parts:
+
+```
+VID167_E7_3_02d18h00m
+│     │  │  │
+│     │  │  └── Time (e.g. 02d18h00m)
+│     │  └──── Position index (1–5 → top/left/center/right/bottom)
+│     └─────── Plate identifier (e.g. E7)
+└─────────── VID / experiment identifier
 ```
 
-This ensures that both the CLI (`main.py`) and web interface (`ui.py`) use exactly the same processing logic, eliminating inconsistencies and making the codebase more maintainable.
+Images sharing the same `VID_plate_time` key are grouped and stitched into a 3×3 well view for combined coverage calculation.
+
+---
+
+## Project structure
+
+```
+incucyte_osteoclasts/
+├── main.py                  # CLI entry point
+├── ui.py                    # Streamlit web interface
+├── app.py                   # Legacy compatibility layer
+├── core/                    # Core processing modules
+│   ├── image_processing.py  # Image I/O and 2× downscaling
+│   ├── segmentation.py      # MicroSAM inference + 5-position stitching
+│   ├── processor.py         # Shared CLI/UI processing logic
+│   └── embedding_cache.py   # LRU embedding cache
+├── analysis/                # Analysis modules
+│   ├── feature_extraction.py # Area and perimeter
+│   ├── neighbours.py         # Touching-cell neighbor counts
+│   └── coverage.py           # Coverage computation
+├── visualization/           # Visualization modules
+│   └── visualization.py     # Overlay rendering + numbered labels
+├── filters/                 # Cell filtering
+│   └── filter.py            # Boolean-mask filter helper
+├── utils/                   # Utilities
+│   └── utils.py             # Incucyte sorting, stats, stitching orchestration
+├── checkpoints/             # Custom micro-SAM fine-tuned checkpoint
+└── requirements.txt         # Dependency snapshot
+```
+
+---
+
+## License
+
+Released under the [MIT License](LICENSE).

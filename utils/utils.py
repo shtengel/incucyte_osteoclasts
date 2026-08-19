@@ -104,7 +104,6 @@ def empty_image_statistics(filename):
         'filtered_segmentation': None,
         'num_cells': 0,
         "cells_touching": 0,
-        'mean_eccentricity': 0,
         'mean_area': 0,
         'mean_perimeter': 0,
         'plate_coverage_percent': 0
@@ -125,7 +124,6 @@ def calculate_image_statistics(segmentation, features_df, cells_touching, filena
         'image_name': filename,
         'num_cells': len(features_df),
         "cells_touching": cells_touching,
-        'mean_eccentricity': features_df['eccentricity'].mean() if not features_df.empty else 0,
         'mean_area': features_df['area'].mean() if not features_df.empty else 0,
         'mean_perimeter': features_df['perimeter'].mean() if not features_df.empty else 0,
         'plate_coverage_percent': compute_coverage(segmentation)
@@ -159,7 +157,6 @@ def combine_image_statistics(image_stats):
             "image_name": key,
             'num_cells': sum([item['num_cells'] for item in statsList]),
             "cells_touching": sum([item['cells_touching'] for item in statsList]),
-            'mean_eccentricity': sum([item['mean_eccentricity'] for item in statsList]) / len(statsList),
             'mean_area': sum([item['mean_area'] for item in statsList]) / len(statsList),
             'mean_perimeter': sum([item['mean_perimeter'] for item in statsList]) / len(statsList),
             'plate_coverage_percent': conbined_computed_coverage

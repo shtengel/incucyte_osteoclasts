@@ -31,7 +31,7 @@ def extract_shape_features(segmentation, original_image, plate_mask=None):
     # Get region properties for each labeled region
     props = regionprops(filtered_segmentation, intensity_image=original_image)
     
-    # Extract area, perimeter, and mean intensity for each cell
+    # Extract area and perimeter for each cell
     features = []
     for prop in props:
         # Skip background (label 0)
@@ -40,7 +40,6 @@ def extract_shape_features(segmentation, original_image, plate_mask=None):
                 'cell_id': prop.label,
                 'area': prop.area,
                 'perimeter': prop.perimeter,
-                'eccentricity': prop.eccentricity,
             })
     
     return pd.DataFrame(features), filtered_segmentation
