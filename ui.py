@@ -116,7 +116,7 @@ def process_uploaded_files(uploaded_files, model_type="vit_b_lm", min_area=200, 
 
 # --- Streamlit layout ---
 st.set_page_config(layout="wide")
-st.title("Image Processing App")
+st.title("Incucyte Osteoclast Segmentation & Analysis")
 
 allowed_extensions = ["png", "tiff", "tif", "jpeg", "jpg"]
 results_df = pd.DataFrame(columns=["Cell ID", "Area", "Confidence"])
