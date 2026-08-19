@@ -67,15 +67,20 @@ def process_image(image_path, output_dir, model_type="vit_b_lm", min_area=200, n
 
 def process_directory(input_dir, output_dir, model_type="vit_b_lm", min_area=200, numbered=False):
     """
-    Process all images in a directory with MicroSAM with progress bar
-    
+    Process all images in a directory with MicroSAM with progress bar.
+
+    Incucyte batches require 5 images per well/time point, named with the
+    underscore format VID_plate_position_time where position is 1-5
+    (top, left, center, right, bottom). Missing positions disable combined
+    3x3 stitching for that group.
+
     Args:
         input_dir: Directory containing input images
         output_dir: Directory to save outputs
         model_type: MicroSAM model type
         min_area: Minimum area threshold for cell filtering
         numbered: Show cells with numbers
-        
+
     Returns:
         DataFrame with final statistics or None if no images processed
     """
@@ -88,7 +93,11 @@ def process_directory(input_dir, output_dir, model_type="vit_b_lm", min_area=200
     incucyte_group = sort_images_incucyte(images=image_files)
     print(f"Found {len(image_files)} images in {input_dir}")
     print(f"Area filtering: Enabled (min area = {min_area} pixels²)")
-    
+    print(
+        "Incucyte batches require 5 positions per well/time point (1=top, 2=left, "
+        "3=center, 4=right, 5=bottom); missing positions disable 3x3 stitching."
+    )
+
     # Process each image and collect statistics with progress bar
     all_image_stats = []
     

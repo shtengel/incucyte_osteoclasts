@@ -163,6 +163,30 @@ VID167_E7_3_02d18h00m
 
 Images sharing the same `VID_plate_time` key are grouped and stitched into a 3×3 well view for combined coverage calculation.
 
+### Batch processing requirements
+
+To compute the combined well coverage, **each well/time point must include exactly 5 images**, one per position, using the exact position order encoded in the filename:
+
+| Position index | Position | Tile in 3×3 grid |
+|---|---|---|
+| 1 | top | top-center |
+| 2 | left | middle-left |
+| 3 | center | middle-center |
+| 4 | right | middle-right |
+| 5 | bottom | bottom-center |
+
+For example, a single well/time point requires these five files:
+
+```
+VID167_E7_1_02d18h00m   # top
+VID167_E7_2_02d18h00m   # left
+VID167_E7_3_02d18h00m   # center
+VID167_E7_4_02d18h00m   # right
+VID167_E7_5_02d18h00m   # bottom
+```
+
+If one or more positions are missing for a `VID_plate_time` group, the pipeline still processes the individual images, but the stitched 3×3 combined coverage for that group will be reported as `0%` and the per-image statistics are not merged into a single group row.
+
 ---
 
 ## Project structure

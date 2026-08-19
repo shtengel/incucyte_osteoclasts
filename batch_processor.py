@@ -53,6 +53,11 @@ def process_batch(
     """
     Process a batch of images and save results (CSVs, visualizations, ZIP).
 
+    Incucyte batches require 5 images per well/time point, named with the
+    underscore format VID_plate_position_time where position is 1-5
+    (top, left, center, right, bottom). Missing positions disable combined
+    3x3 stitching for that group.
+
     Args:
         input_source: Directory path containing images, or a list of image file paths.
         output_dir: Directory to save outputs. If None, uses a temp directory.
@@ -82,6 +87,10 @@ def process_batch(
 
     logger.info("Found %d images", len(image_paths))
     logger.info("Model: %s | Min area: %d | Numbered: %s", model_type, min_area, numbered)
+    logger.info(
+        "Incucyte batches require 5 positions per well/time point "
+        "(1=top, 2=left, 3=center, 4=right, 5=bottom); missing positions disable 3x3 stitching."
+    )
 
     # Group images by incucyte metadata
     incucyte_group = sort_images_incucyte(

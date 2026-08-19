@@ -235,6 +235,36 @@ with tab3:
         4. When complete, click **📦 Download Results (ZIP)**.
         5. The ZIP contains annotated overlays, per-image feature CSVs, and a `FINAL_STATS.csv` summary table.
 
+        #### Required filename format for Incucyte batches
+
+        To compute the combined well coverage, **every well/time point must have exactly 5 images** with names split by underscores in this order:
+
+        ```
+        VID{experiment}_{plate}_{position}_{time}
+        ```
+
+        The third field (`position`) must be the number **1–5**, mapping to these tile positions in the 3×3 stitched grid:
+
+        | Position number | Position | Grid tile |
+|---|---|---|
+| 1 | top | top-center |
+| 2 | left | middle-left |
+| 3 | center | middle-center |
+| 4 | right | middle-right |
+| 5 | bottom | bottom-center |
+
+        For one well/time point, upload all five files, for example:
+
+        ```
+        VID167_E7_1_02d18h00m   # top
+        VID167_E7_2_02d18h00m   # left
+        VID167_E7_3_02d18h00m   # center
+        VID167_E7_4_02d18h00m   # right
+        VID167_E7_5_02d18h00m   # bottom
+        ```
+
+        Images that do not follow this four-part underscore format are still segmented individually, but they are **not stitched** and their combined coverage remains `0%`.
+
         #### What is in `FINAL_STATS.csv`?
         - `image_name`: input image name or Incucyte `VID_plate_time` group key.
         - `num_cells`: cells that passed the Min Area filter.
