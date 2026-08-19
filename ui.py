@@ -139,6 +139,8 @@ if "zip_path" not in st.session_state:
     st.session_state.zip_path = None
 if "batch_stats_df" not in st.session_state:
     st.session_state.batch_stats_df = None
+if "batch_processed" not in st.session_state:
+    st.session_state.batch_processed = False
 
 # --- Tab 3: Documentation ---
 with tab3:
@@ -176,7 +178,7 @@ with tab3:
 
         **Intended users:** researchers running Incucyte live-cell assays who need consistent, quantitative segmentation across many images and time points.
         """)
-        show_image("overview_example.png", caption="Example: segmented cells overlaid on an Incucyte image.")
+        show_image("app_overview.png", caption="Example: segmented cells overlaid on an Incucyte image.")
 
     elif section == "Recommended Workflow":
         st.markdown("""
@@ -191,7 +193,6 @@ with tab3:
         5. Re-run the same single images to confirm the filters look correct.
         6. Only then switch to **📂 Batch Processing** with the chosen values.
         """)
-        show_image("workflow_calibration_area.png", caption="Calibrate Min Area: keep true cells while removing small fragments.")
 
     elif section == "Parameters Guide":
         st.markdown("""
@@ -209,7 +210,6 @@ with tab3:
         The default is `vit_b_lm`, which loads the custom `vit_b_lm_incucyte` fine-tuned checkpoint.
         Only change this if you have a compatible replacement model/checkpoint.
         """)
-        show_image("parameters_sidebar.png", caption="The parameter sidebar.", width=400)
 
     elif section == "Single Image Tutorial":
         st.markdown("""
@@ -222,8 +222,8 @@ with tab3:
         5. Review the comparison: your uploaded image and the annotated overlay.
         6. Expand **📊 Show Results Table** to see per-cell measurements and the number of touching cells.
         """)
-        show_image("tutorial_single_upload.png", caption="Step 2: Upload a single image.")
-        show_image("tutorial_single_output.png", caption="Step 5: Original vs. processed output.")
+        show_image("single_image_upload.png", caption="Step 2: Upload a single image.")
+        show_image("single_image_result.png", caption="Step 5: Original vs. processed output.")
 
     elif section == "Batch Processing Tutorial":
         st.markdown("""
@@ -246,12 +246,12 @@ with tab3:
         The third field (`position`) must be the number **1–5**, mapping to these tile positions in the 3×3 stitched grid:
 
         | Position number | Position | Grid tile |
-|---|---|---|
-| 1 | top | top-center |
-| 2 | left | middle-left |
-| 3 | center | middle-center |
-| 4 | right | middle-right |
-| 5 | bottom | bottom-center |
+        |---|---|---|
+        | 1 | top | top-center |
+        | 2 | left | middle-left |
+        | 3 | center | middle-center |
+        | 4 | right | middle-right |
+        | 5 | bottom | bottom-center |
 
         For one well/time point, upload all five files, for example:
 
@@ -279,8 +279,7 @@ with tab3:
 
         > **Note:** Segmentation results may vary slightly between different computers due to hardware differences, floating-point behavior, and dependency versions. Always verify outputs on your own system.
         """)
-        show_image("tutorial_batch_upload.png", caption="Step 2: Select multiple files.")
-        show_image("tutorial_batch_results.png", caption="Step 4: Download the results ZIP.")
+        show_image("app_overview.png", caption="Step 2: Select multiple files.")
 
     elif section == "Output Files":
         st.markdown("""
@@ -317,8 +316,8 @@ with tab3:
         | `mean_perimeter` | Mean cell perimeter in pixels. |
         | `plate_coverage_percent` | Estimated plate area covered by cells.|
         """)
-        show_image("features.png", caption="Example per-cell features CSV opened in a spreadsheet.")
-        show_image("final_stats.png", caption="Example FINAL_STATS.csv opened in a spreadsheet.")
+        show_image("per_cell_features_csv.png", caption="Example per-cell features CSV opened in a spreadsheet.")
+        show_image("final_stats_csv.png", caption="Example FINAL_STATS.csv opened in a spreadsheet.")
 
 # --- Tab 1: Single Image ---
 with tab1:
@@ -373,6 +372,7 @@ with tab2:
     uploaded_files = st.file_uploader("Upload multiple image files from a folder", type=allowed_extensions, accept_multiple_files=True, key="multi")
 
     if uploaded_files and st.button("Process Uploaded Batch", key="process_batch"):
+        st.session_state.batch_processed = True
         with st.spinner("Processing batch..."):
             zip_path, batch_stats_df = process_uploaded_files(
                 uploaded_files,
@@ -395,5 +395,5 @@ with tab2:
 
         with st.expander("📊 Show Summary Table"):
             st.dataframe(st.session_state.batch_stats_df)
-    else:
+    elif st.session_state.batch_processed:
         st.warning("No images were successfully processed.")

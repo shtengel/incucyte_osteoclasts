@@ -115,18 +115,20 @@ def process_directory(input_dir, output_dir, model_type="vit_b_lm", min_area=200
         stats_df = pd.DataFrame(final_combined_stats)
         final_csv_path = os.path.join(output_dir, "FINAL_STATS.csv")
         stats_df.to_csv(final_csv_path, index=False)
-        
+
         print(f"\nSaved final statistics to {final_csv_path}")
-        
+
         # Print summary
         print("\nSummary:")
         print(f"Total images processed: {len(all_image_stats)}")
         print(f"Average cells per image: {stats_df['num_cells'].mean():.2f}")
         print(f"Average plate coverage: {stats_df['plate_coverage_percent'].mean():.2f}%")
-        
+
         return stats_df
-    else:
+    elif image_files:
         print("No images were successfully processed.")
+        return None
+    else:
         return None
 
 

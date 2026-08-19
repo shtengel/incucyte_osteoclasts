@@ -2,6 +2,8 @@
 
 A Streamlit web app and command-line tool for automated segmentation and quantitative analysis of **Incucyte time-lapse microscopy images** (5-position wells: center, top, bottom, left, right). It uses a custom fine-tuned [micro-SAM](https://computational-cell-analytics.github.io/micro-sam/micro_sam.html) model to segment individual cells, extracts shape features, and computes plate coverage — including optional 5-position well stitching.
 
+![App overview](assets/app_overview.png)
+
 ---
 
 ## Features
@@ -57,6 +59,9 @@ python main.py --input /path/to/images --output /path/to/results
 4. Adjust the sidebar parameters (see [Parameters](#parameters)).
 5. Click **Process Image** and review the comparison.
 
+![Single image upload](assets/single_image_upload.png)
+![Single image upload](assets/single_image_result.png)
+
 ### 2. Process a batch
 
 1. Open the **📂 Batch Processing** tab.
@@ -65,6 +70,8 @@ python main.py --input /path/to/images --output /path/to/results
 4. Download the **📦 results ZIP** containing annotated overlays, per-image CSVs, and `FINAL_STATS.csv`.
 
 > **Note:** Segmentation results may vary slightly between different computers due to differences in hardware, floating-point behavior, and dependency versions. Always verify outputs on your own system before drawing conclusions.
+
+![Batch processing](assets/app_overview.png)
 
 ---
 
@@ -78,7 +85,11 @@ For every processed image the app writes three files into the results folder (an
 
 For batches, a fourth file `FINAL_STATS.csv` summarizes every image on one row.
 
+![Output files overview](assets/output_files_overview.png)
+
 ### Per-cell features (`<image>_features.csv`)
+
+![Per-cell features CSV](assets/per_cell_features_csv.png)
 
 Each row corresponds to a single cell that passed all filters.
 
@@ -89,6 +100,8 @@ Each row corresponds to a single cell that passed all filters.
 | `perimeter` | Cell perimeter in pixels. |
 
 ### Batch summary (`FINAL_STATS.csv`)
+
+![Final stats CSV](assets/final_stats_csv.png)
 
 `FINAL_STATS.csv` contains one summary row per image or per Incucyte well group:
 
