@@ -27,6 +27,14 @@ After activating the micro-SAM environment, install the remaining dependencies:
 pip install -r requirements.txt
 ```
 
+The custom MicroSAM checkpoint (`checkpoints/checkpoints/vit_b_lm_incucyte/incucyte_2.pt`) is tracked by **Git LFS**. Download the actual model weights with:
+
+```bash
+git lfs pull
+```
+
+If the checkpoint remains a small LFS pointer, segmentation will fail with an `invalid load key` error.
+
 Then launch either the web UI or the CLI:
 
 ```bash

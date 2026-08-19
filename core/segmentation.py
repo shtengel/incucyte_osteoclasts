@@ -9,7 +9,6 @@ from micro_sam.automatic_segmentation import get_predictor_and_segmenter, automa
 from micro_sam.instance_segmentation import (
     InstanceSegmentationWithDecoder,
     get_predictor_and_decoder,
-    mask_data_to_segmentation
 )
 from micro_sam.util import precompute_image_embeddings
 from .embedding_cache import EmbeddingCache
@@ -115,8 +114,7 @@ def run_automatic_instance_segmentation(image, model_type="vit_b_lm", checkpoint
     start_time = time.perf_counter()
     ais = InstanceSegmentationWithDecoder(predictor, decoder)
     ais.initialize(image=image, image_embeddings=image_embeddings)
-    prediction = ais.generate()
-    prediction = mask_data_to_segmentation(prediction, with_background=True)
+    prediction = ais.generate(output_mode="instance_segmentation").astype(np.uint32)
     print(f"InstanceSegmentationWithDecoder time: {(time.perf_counter() - start_time) * 1000:.3f} ms")
 
     return prediction

@@ -50,7 +50,7 @@ def process_image_core(image, filename, model_type="vit_b_lm", min_area=200, num
     
     # Create visualizations
     segmentation_vis, random_colors = visualize_segmentation(image, segmentation)
-    # area_filtered_vis, _ = visualize_segmentation(image, area_filtered_segmentation, random_colors)
+    area_filtered_vis, _ = visualize_segmentation(image, area_filtered_segmentation, random_colors)
     final_filtered_vis, _ = visualize_segmentation(image, filtered_segmentation, random_colors)
     
     if numbered:
@@ -76,7 +76,7 @@ def process_image_core(image, filename, model_type="vit_b_lm", min_area=200, num
         'incucyte_info': extract_incucyte_info(os.path.basename(filename)),
         'visualizations': {
             'segmentation_vis': segmentation_vis,
-            # 'area_filtered_vis': area_filtered_vis,
+            'area_filtered_vis': area_filtered_vis,
             'final_filtered_vis': final_filtered_vis,
             'random_colors': random_colors
         }
