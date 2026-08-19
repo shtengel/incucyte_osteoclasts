@@ -275,6 +275,8 @@ with tab3:
 
         For Incucyte 5-position filenames (e.g. `VID167_E7_3_02d18h00m`), images are grouped by `VID_plate_time`, stitched into a 3×3 grid, and coverage is computed on the combined well view.
 
+        > **Note:** The stitched 3×3 grid is not exported as a separate image. It only appears in `FINAL_STATS.csv` as a single grouped row with the combined `plate_coverage_percent` for the well.
+
         > **Note:** Segmentation results may vary slightly between different computers due to hardware differences, floating-point behavior, and dependency versions. Always verify outputs on your own system.
         """)
         show_image("tutorial_batch_upload.png", caption="Step 2: Select multiple files.")
@@ -290,7 +292,7 @@ with tab3:
         - `<image>_features.csv` — per-cell measurements.
         - `<image>.png` — the input image saved alongside results (batch mode only).
 
-        Batches also include `FINAL_STATS.csv`, which contains one summary row per image or per stitched Incucyte well group.
+        Batches also include `FINAL_STATS.csv`, which contains one summary row per image or per stitched Incucyte well group. The stitched 3×3 grid is not saved as an image — its combined coverage and other aggregated values are only available in this final summary table.
 
         #### Per-cell features (`<image>_features.csv`)
 

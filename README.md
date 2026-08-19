@@ -101,7 +101,7 @@ Each row corresponds to a single cell that passed all filters.
 | `mean_perimeter` | Average cell perimeter among detected cells (pixels). |
 | `plate_coverage_percent` | Estimated percentage of the plate area covered by cells. |
 
-For Incucyte 5-position filenames (`VID167_E7_3_02d18h00m`), rows are grouped by `VID_plate_time` and coverage is computed on the stitched 3×3 grid.
+For Incucyte 5-position filenames (`VID167_E7_3_02d18h00m`), rows are grouped by `VID_plate_time` and coverage is computed on the stitched 3×3 grid. The stitched grid itself is not saved as an image — it only appears in `FINAL_STATS.csv` as the combined `plate_coverage_percent` for the well group.
 
 ---
 
